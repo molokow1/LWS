@@ -1,0 +1,50 @@
+{
+    "region": "AU",
+    "experiment" : 1,
+    "graphics" : 0,
+    "fullCollision" : true,
+    "pktLen" : 20,
+    "maxBSReceives" : 8,
+    "gamma" : 2.08,
+    "d0" : 40,
+    "var" : 0,
+    "Lpld0" : 127.41,
+    "GL" : 0,
+    "undergroundEnv" : true,
+    "burialDepth" : 0.1,
+    "baseStationHeight" : 3,
+    "vwc" : 0.05,
+    "bulkDensity" : 1.5,
+    "particleDensity" : 2.66 ,
+    "sandFrac" : 0.40,
+    "clayFrac" : 0.40,
+    "maxDist" : 10,
+    "useAutoMaxDist" : false,
+    "simulationParams" :{
+        "numNodes" : 30,
+        "numBasestations" : 1,
+        "avgSendTime" : 10,
+        "simTime" : 24,
+        "pathLossModelType" : "experimentData",
+        "experimentDataMultiplier" : 1.41
+
+    },
+    "nodeSettings" : {
+        "SF"                    :   12,
+        "CR"                    :   4,
+        "BW"                    :   125,
+        "pTx"                   :   14,
+        "sensitivity"           :   -137,
+        "RX1_DELAY"             :   1000,
+        "RX2_DELAY"             :   2000,
+        "numRetransmissions"    :   8
+    },
+    "ACKSettings" : {
+        "enableACKTest" : true,
+        "ACKPercentage" : 0.05
+    },
+    "dutyCycleSettings" : {
+        "enableDutyCycle" : true,
+        "dutyCycleAmount" : 0.01
+    }
+}

@@ -37,7 +37,7 @@ class RegionalParams():
 
 
 def main():
-    print RegionalParams.AU_FREQ
+    print(RegionalParams.AU_FREQ)
 
 if __name__ == '__main__':
     main()

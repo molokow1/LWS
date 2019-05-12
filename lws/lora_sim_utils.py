@@ -1,9 +1,9 @@
 import math
 import numpy as np
 import random
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import subprocess
-from matplotlib.backends.backend_pdf import PdfPages
+# from matplotlib.backends.backend_pdf import PdfPages
 import json
 import os 
 import datetime 
@@ -65,14 +65,8 @@ class FileUtils(object):
 
 
 
-def main():
+
+if __name__ == '__main__':
     fileUtils = FileUtils()
     fileUtils.createNewSession()
     fileUtils.writeSimResult("hello", fileName = "test")
-    # maxRange = calcMaxRange(Ptx, GL, sens, freq)
-    # print("max range is: {}km".format(maxRange))
-    
-
-
-if __name__ == '__main__':
-    main()

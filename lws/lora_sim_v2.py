@@ -3,8 +3,6 @@ Trying to improve the code quality of LoRaSim in "Do LoRa Low-Power Wide-Area Ne
  and Juan Alonso, MSWiM '16, http://dx.doi.org/10.1145/2988287.2989163
 Also, this will incoporate underground path loss model for a underground LoRa sensor network simulation.
 AUTHOR: SEAN WU
-
-
 """
 
 import simpy
@@ -12,8 +10,8 @@ import random
 import numpy as np
 import math
 import sys
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_pdf import PdfPages
+# import matplotlib.pyplot as plt
+# from matplotlib.backends.backend_pdf import PdfPages
 import os
 import subprocess
 from enum import Enum
@@ -41,7 +39,7 @@ def airtime(sf, cr, pl, bw):
 
     Tsym = (2.0**sf)/bw
     Tpream = (Npream + 4.25)*Tsym
-    print "sf", sf, " cr", cr, "pl", pl, "bw", bw
+    print("sf", sf, " cr", cr, "pl", pl, "bw", bw)
     payloadSymbNB = 8 + \
         max(math.ceil((8.0*pl-4.0*sf+28+16-20*H)/(4.0*(sf-2*DE)))*(cr+4), 0)
     Tpayload = payloadSymbNB * Tsym
@@ -79,7 +77,7 @@ def generateRandomNodePos(numNodes, maxDist, bsX, bsY):
                     else:
                         rounds = rounds + 1
                         if rounds == 100:
-                            print "could not place new node, giving up"
+                            print("could not place new node, giving up")
                             exit(-1)
             else:
                 nodeX = posx
@@ -99,15 +97,15 @@ def checkCollision(packet, packetsAtBS, maxBSReceives, fullCollision, currentTim
         if packetsAtBS[i].packet.processed == True:
             processing = processing + 1
     if (processing > maxBSReceives):
-        print "too long:", len(packetsAtBS)
+        print("too long:" + len(packetsAtBS))
         packet.processed = False
     else:
         packet.processed = True
 
     if packetsAtBS:
-        print "CHECK node {} (sf:{} bw:{} freq:{:.6e}) others: {}".format(
+        print("CHECK node {} (sf:{} bw:{} freq:{:.6e}) others: {}".format(
             packet.nodeId, packet.sf, packet.bw, packet.freq,
-            len(packetsAtBS))
+            len(packetsAtBS)))
         for other in packetsAtBS:
             if other.nodeId != packet.nodeId:
                 pass
@@ -137,43 +135,43 @@ def checkCollision(packet, packetsAtBS, maxBSReceives, fullCollision, currentTim
 
 def frequencyCollision(p1, p2):
         if (abs(p1.freq-p2.freq) <= 120 and (p1.bw == 500 or p2.freq == 500)):
-            print "frequency coll 500"
+            print("frequency coll 500")
             return True
         elif (abs(p1.freq-p2.freq) <= 60 and (p1.bw == 250 or p2.freq == 250)):
-            print "frequency coll 250"
+            print("frequency coll 250")
             return True
         else:
             if (abs(p1.freq-p2.freq) <= 30):
-                print "frequency coll 125"
+                print("frequency coll 125")
                 return True
             #else:
-        print "no frequency coll"
+        print("no frequency coll")
         return False
 
 def sfCollision(p1, p2):
     if p1.sf == p2.sf:
-        print "collision sf node {} and node {}".format(p1.nodeId, p2.nodeId)
+        print("collision sf node {} and node {}".format(p1.nodeId, p2.nodeId))
         # p2 may have been lost too, will be marked by other checks
         return True
-    print "no sf collision"
+    print("no sf collision")
     return False
 
 def powerCollision(p1, p2):
     powerThreshold = 6  # dB
-    print "pwr: node {0.nodeId} {0.rssi:3.2f} dBm node {1.nodeId} {1.rssi:3.2f} dBm; diff {2:3.2f} dBm".format(
-        p1, p2, round(p1.rssi - p2.rssi, 2))
+    print("pwr: node {0.nodeId} {0.rssi:3.2f} dBm node {1.nodeId} {1.rssi:3.2f} dBm; diff {2:3.2f} dBm".format(
+        p1, p2, round(p1.rssi - p2.rssi, 2)))
     if abs(p1.rssi - p2.rssi) < powerThreshold:
-        print "collision pwr both node {} and node {}".format(
-            p1.nodeId, p2.nodeId)
+        print("collision pwr both node {} and node {}".format(
+            p1.nodeId, p2.nodeId))
         # packets are too close to each other, both collide
         # return both packets as casualties
         return (p1, p2)
     elif p1.rssi - p2.rssi < powerThreshold:
         # p2 overpowered p1, return p1 as casualty
-        print "collision pwr node {} overpowered node {}".format(
-            p2.nodeId, p1.nodeId)
+        print("collision pwr node {} overpowered node {}".format(
+            p2.nodeId, p1.nodeId))
         return (p1,)
-    print "p1 wins, p2 lost"
+    print("p1 wins, p2 lost")
     # p2 was the weaker packet, return it as a casualty
     return (p2,)
 
@@ -191,14 +189,14 @@ def timingCollision(p1, p2, currentTime):
     # check whether p2 ends in p1's critical section
     p2_end = p2.addTime + p2.rectime
     p1_cs = currentTime + Tpreamb
-    print "collision timing node {} ({},{},{}) node {} ({},{})".format(
+    print("collision timing node {} ({},{},{}) node {} ({},{})".format(
         p1.nodeId, currentTime - currentTime, p1_cs - currentTime, p1.rectime,
-        p2.nodeId, p2.addTime - currentTime, p2_end - currentTime)
+        p2.nodeId, p2.addTime - currentTime, p2_end - currentTime))
     if p1_cs < p2_end:
         # p1 collided with p2 and lost
-        print "not late enough"
+        print("not late enough")
         return True
-    print "saved by the preamble"
+    print("saved by the preamble")
     return False
 
 
@@ -288,10 +286,10 @@ class Basestation():
         self.sensitivity = self.config.sensitivityList[node.packet.sf - 7, [125, 250, 500].index(node.packet.bw) + 1]
         node.sent = node.sent + 1
         if (node in self.packetsAtBS):
-            print "ERROR: packet already in"
+            print("ERROR: packet already in")
         else:
             if checkPacketLoss(node.packet.rssi, self.sensitivity):
-                print "node {}: packet will be lost".format(node.nodeId)
+                print("node {}: packet will be lost".format(node.nodeId))
                 node.packet.lost = True
             else:
                 node.packet.lost = False
@@ -991,7 +989,7 @@ def main():
     fileUtils.writeSimResult(sim.getSimResultStr(), "lorasimTest")
     if config.graphics == 1:
         sim.showGraphics()
-        raw_input("press Enter to continue...")
+        input("press Enter to continue...")
 
     
         

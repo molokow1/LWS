@@ -17,10 +17,11 @@ plottingNames = {   "vwc"           :   "VWC(%)",
                     "numNodes"      :   "Number of Nodes",
                     "ACKPercentage" :   "ACK Rate(%)"}
 
-def calc_ALOHA_DER(num_transmitters, air_time, trans_rate):
-    # most basic DER calculation with ALOHA
-    der = np.exp(-2 * num_transmitters * air_time * trans_rate)
-    return der
+
+# def calc_ALOHA_DER(num_transmitters, air_time, trans_rate):
+#     # most basic DER calculation with ALOHA
+#     der = np.exp(-2 * num_transmitters * air_time * trans_rate)
+#     return der
 
 
 def calc_batch_ALOHA_DER(num_nodes_arr):
@@ -43,7 +44,8 @@ def plot_sim_data(num_nodes,sim_name, exp_type):
         # plt.plot(num_nodes, aloha_arr, label = "ALOHA result")
         # plt.plot(num_nodes, sim_data[sim_name], label = "SN" + str(exp_type))
     else:
-        plt.plot(num_nodes, sim_data[sim_name], label = "SN" + str(exp_type))
+        pass
+        # plt.plot(num_nodes, sim_data[sim_name], label = "SN" + str(exp_type))
 
     plt.xlabel("Number of nodes")
     plt.ylabel(sim_name)
@@ -89,8 +91,8 @@ class lora_sim_wrapper():
             self.single_simulation(sim_type, int(n), avg_send_interval, exp_type, sim_time, collision)
 
     def get_sim_result(self, fname = None):
-    	if fname is None:
-        	fname = "exp" + str(self.exp_type) + ".dat"
+        if fname is None:
+            fname = "exp" + str(self.exp_type) + ".dat"
 
         with open(fname) as f:
             content = f.readlines()
@@ -106,9 +108,9 @@ class lora_sim_wrapper():
             collision_result.append(line[1])
             retransmit_result.append(line[2])
 
-        print der_result
-        print collision_result
-        print retransmit_result
+        print (der_result)
+        print (collision_result)
+        print (retransmit_result)
         retDict = {}
         retDict.update({'DER': der_result,
                         'collision': collision_result,
@@ -117,7 +119,7 @@ class lora_sim_wrapper():
         
     def get_exp_type(self):
     	return 0
-        return self.exp_type
+        # return self.exp_type
 
 def plot_original_sim():
     num_nodes_arr = np.linspace(10, 1600, 17)
@@ -466,7 +468,7 @@ def plotMultiVarDERResult(path, name, resultDict, paramArr, labelList):
     
 
     plt.ylim((-0.05, 1))
-    for i in xrange(0, len(resultDict["DER"]) + 1, stepSize):
+    for i in range(0, len(resultDict["DER"]) + 1, stepSize):
         # print(i)
         if i != 0:
             currentLabelIndex = int(i / stepSize) - 1
@@ -498,13 +500,12 @@ def plot_new_sim(option):
     
 
 
-def main():
+    
+    
+
+if __name__ == '__main__':
     # option_arr = ["multi_var", "single_var", "retransmission"]
     option_arr = ["multi_var"]
     # plot_original_sim()
     for o in option_arr:
         plot_new_sim(o)
-    
-
-if __name__ == '__main__':
-    main()
