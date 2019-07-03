@@ -1,27 +1,19 @@
 import math
 import numpy as np
 import random
-# import matplotlib.pyplot as plt
 import subprocess
-# from matplotlib.backends.backend_pdf import PdfPages
 import json
 import os 
 import datetime 
 from lws.region_params import RegionalParams
 
-TIME_ON_AIR = 1712.13
-PACKET_RATE = 1e-6
-Ptx = 14
-GL = 0
-freq = 915
-sens = -133.25
 
 def calc_ALOHA_DER(num_transmitters, air_time, trans_rate):
     # most basic DER calculation with ALOHA
     der = np.exp(-2 * num_transmitters * air_time * trans_rate)
     return der
 
-def calcMaxRange(Ptx, GL, sens, freq):
+def calc_max_range(Ptx, GL, sens, freq):
     beforeLog = (Ptx + GL - sens - 32.4) / 20 -  math.log10(freq)
     maxRange = math.pow(10, (beforeLog))
     return maxRange
@@ -47,46 +39,86 @@ def airtime(sf, cr, pl, bw):
         max(math.ceil((8.0*pl-4.0*sf+28+16-20*H)/(4.0*(sf-2*DE)))*(cr+4), 0)
     Tpayload = payloadSymbNB * Tsym
     return Tpream + Tpayload
+    
+
+def generate_random_end_device_positions(num_end_devices, max_dist, bs_x, bs_y):
+    device_pos_arr = []
+
+    for _ in range(num_end_devices):
+        found = False
+        rounds = 0
+        pos_x = 0.0
+        pos_y = 0.0 
+        while found == False and rounds < 100:
+            a = random.random()
+            b = random.uniform(a,1.0)
+
+            pos_x = b * max_dist * math.cos(2 * math.pi * a/b) + bs_x
+            pos_y = b * max_dist * math.sin(2 * math.pi * a/b) + bs_x
+
+            if device_pos_arr:
+                for device_pos in device_pos_arr:
+                    x, y, _ = device_pos
+                    dist = np.sqrt(abs(x - pos_x) ** 2 + abs(y - pos_y) ** 2)
+                    if dist >= 1:
+                        found = True
+                        save_x = pos_x
+                        save_y = pos_y
+                    else:
+                        rounds += 1
+                        if rounds == 100:
+                            print("Could not place a new node randomly due to tight spaces")
+                            exit(-1)
+            else:
+                save_x = pos_x
+                save_y = pos_y
+                found = True
+
+        dist_to_bs = np.sqrt(abs(save_x - bs_x) ** 2 + abs(save_y - bs_y) ** 2) 
+        device_pos_arr.append((save_x, save_y, dist_to_bs))
+    
+    return device_pos_arr
 
 
 class FileUtils(object):
-    simResultFolderPath = os.path.join(os.getcwd(), "sim_result")
+#creates a subfolder in the sim_result folder for different simulation session
+#can be inherited to change the dateformat which is the prefix for the subfolders. can also change the headline for the result file to indicate the columns (TODO: modify this class to output a csv file instead of a .dat file)
 
-    def __createResultFolder(self):
+    simResultFolderPath = os.path.join(os.getcwd(), "sim_result")
+    dateFormat = '%Y-%m-%d-%H-%M-%S'
+    resultHeadLine = "nrNodes nrCollisions nrLost pktsSent OverallEnergy DER Retransmissions RetransmissionRate\r\n"
+
+    def _createResultFolder(self):
         if not os.path.exists(self.simResultFolderPath):
             os.mkdir(self.simResultFolderPath)
 
     def createNewSession(self, sessionName = ""):
-        self.currentSession = sessionName + datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
-        self.__createResultFolder()
-        self.__currentSessionPath = os.path.join(self.simResultFolderPath, self.currentSession)
+        self.currentSession = sessionName + datetime.datetime.now().strftime(self.dateFormat)
+        self._createResultFolder()
+        self._currentSessionPath = os.path.join(self.simResultFolderPath, self.currentSession)
         os.mkdir(os.path.join(self.simResultFolderPath, self.currentSession))
 
     @property
     def currentSessionPath(self):
-        return self.__currentSessionPath
+        return self._currentSessionPath
 
-    def __initSimResultFile(self, fileName):
+    def _initSimResultFile(self, fileName):
         self.currentFileName = fileName + ".dat"
-        f = os.path.join(self.__currentSessionPath, self.currentFileName)
-        names = "nrNodes nrCollisions nrLost pktsSent OverallEnergy DER Retransmissions RetransmissionRate\r\n"
+        f = os.path.join(self._currentSessionPath, self.currentFileName)
         if not os.path.isfile(f):
             with open(f, "a") as openFile:
-                openFile.write(names)
+                openFile.write(self.resultHeadLine)
             openFile.close()
-        
         return f
 
-    
     def writeSimResult(self, writeStr, fileName):
         if not hasattr(self, "currentSession"):
             raise ValueError("Need to create a new Session First.")
-        filePath = self.__initSimResultFile(fileName)
+        filePath = self._initSimResultFile(fileName)
         with open(filePath, "a") as openFile:
             openFile.write(writeStr)
         openFile.close()
         print("Simulation result successfully stored in {}.dat".format(self.currentSession + "/" + fileName))
-
 
 class ConfigReader(object):
     #Read a json config file lora_sim_config.json

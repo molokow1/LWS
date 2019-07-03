@@ -2,3 +2,5 @@
 *.pyc
 *.dat
 *.vscode
+.env
+*.lock
