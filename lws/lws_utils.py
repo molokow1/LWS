@@ -5,6 +5,8 @@ import subprocess
 import json
 import os 
 import datetime 
+import csv 
+
 from lws.region_params import RegionalParams
 
 
@@ -84,41 +86,66 @@ class FileUtils(object):
 #creates a subfolder in the sim_result folder for different simulation session
 #can be inherited to change the dateformat which is the prefix for the subfolders. can also change the headline for the result file to indicate the columns (TODO: modify this class to output a csv file instead of a .dat file)
 
-    simResultFolderPath = os.path.join(os.getcwd(), "sim_result")
-    dateFormat = '%Y-%m-%d-%H-%M-%S'
-    resultHeadLine = "nrNodes nrCollisions nrLost pktsSent OverallEnergy DER Retransmissions RetransmissionRate\r\n"
+    sim_result_folder_path = os.path.join(os.getcwd(), "sim_result")
+    date_format = '%Y-%m-%d-%H-%M-%S'
 
-    def _createResultFolder(self):
-        if not os.path.exists(self.simResultFolderPath):
-            os.mkdir(self.simResultFolderPath)
+    result_headline = "nrNodes nrCollisions nrLost pktsSent OverallEnergy DER Retransmissions RetransmissionRate\r\n"
 
-    def createNewSession(self, sessionName = ""):
-        self.currentSession = sessionName + datetime.datetime.now().strftime(self.dateFormat)
-        self._createResultFolder()
-        self._currentSessionPath = os.path.join(self.simResultFolderPath, self.currentSession)
-        os.mkdir(os.path.join(self.simResultFolderPath, self.currentSession))
+    result_csv_header = ['num_nodes', 'num_collisions', 'num_lost', 'pkts_sent', 'energy_consumption', 'DER', 'retransmissions', 'retransmission_rate']
+
+    def __init__(self, session_name = ''):
+        self.create_new_session(session_name)
+
+    def _create_result_folder(self):
+        if not os.path.exists(self.sim_result_folder_path):
+            os.mkdir(self.sim_result_folder_path)
+
+    def create_new_session(self, session_name = ""):
+        self.current_session = session_name + datetime.datetime.now().strftime(self.date_format)
+        self._create_result_folder()
+        self._current_session_path = os.path.join(self.sim_result_folder_path, self.current_session)
+        os.mkdir(os.path.join(self.sim_result_folder_path, self.current_session))
 
     @property
-    def currentSessionPath(self):
-        return self._currentSessionPath
+    def current_session_path(self):
+        return self._current_session_path
 
-    def _initSimResultFile(self, fileName):
-        self.currentFileName = fileName + ".dat"
-        f = os.path.join(self._currentSessionPath, self.currentFileName)
+    def _init_sim_result_file(self, file_name):
+        self.current_file_name = file_name + ".dat"
+        f = os.path.join(self._current_session_path, self.current_file_name)
         if not os.path.isfile(f):
-            with open(f, "a") as openFile:
-                openFile.write(self.resultHeadLine)
-            openFile.close()
+            with open(f, "a") as open_file:
+                open_file.write(self.result_headline)
+            open_file.close()
         return f
 
-    def writeSimResult(self, writeStr, fileName):
-        if not hasattr(self, "currentSession"):
+    def _init_sim_result_csv_file(self, file_name):
+        self.current_file_name = file_name + '.csv'
+        
+        f = os.path.join(self._current_session_path, self.current_file_name)
+        if not os.path.isfile(f):
+            with open(f, 'a', newline='') as csv_file:
+                writer = csv.DictWriter(csv_file, fieldnames=self.result_csv_header)
+                writer.writeheader()
+        return f
+    
+    def write_sim_result_to_csv(self, result_dict, file_name):
+        if not hasattr(self, "current_session"):
+            raise AttributeError("New to create a new session first by using the createNewSession method.")
+        file_path = self._init_sim_result_csv_file(file_name)
+        with open(file_path, 'a') as csv_file:
+            writer = csv.DictWriter(csv_file, fieldnames=self.result_csv_header)
+            writer.writerow(result_dict)
+        csv_file.close()
+
+    def write_sim_result(self, write_str, file_name):
+        if not hasattr(self, "current_session"):
             raise ValueError("Need to create a new Session First.")
-        filePath = self._initSimResultFile(fileName)
-        with open(filePath, "a") as openFile:
-            openFile.write(writeStr)
-        openFile.close()
-        print("Simulation result successfully stored in {}.dat".format(self.currentSession + "/" + fileName))
+        filePath = self._init_sim_result_file(file_name)
+        with open(filePath, "a") as open_file:
+            open_file.write(write_str)
+        open_file.close()
+        print("Simulation result successfully stored in {}.dat".format(self.current_session + "/" + file_name))
 
 class ConfigReader(object):
     #Read a json config file lora_sim_config.json
