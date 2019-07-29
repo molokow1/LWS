@@ -4,3 +4,6 @@
 *.vscode
 .env
 *.lock
+*.zip
+*.pdf
+*.sqlite3

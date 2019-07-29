@@ -1,0 +1,126 @@
+<html>
+{% load widget_tweaks %}
+<head>
+    <title>LWS</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+        integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous">
+    </script>
+</head>
+
+<body>
+    <div class="container">
+        <h1 class="display-4">Simulation Settings</h1>
+    </div>
+    <!-- <div class="container">
+        <form action="">
+
+
+            <h3>Regional Transmission Settings</h1>
+                <div class="form-row">
+                    <div class="col">
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <label class="input-group-text" for="regionSelect">Region</label>
+                            </div>
+                            <select class="custom-select" id="regionSelect">
+                                <option selected>Select</option>
+                                <option value="1">AU</option>
+                                <option value="2">EU</option>
+                                <option value="3">AS</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <label class="input-group-text" for="freqSelect">Center Frequency (Mhz)</label>
+                            </div>
+                            <select class="custom-select" id="freqSelect">
+                                <option selected>Select</option>
+                                <option value="1">915</option>
+                                <option value="2">916</option>
+                                <option value="3">Random</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <label class="input-group-text" for="bwSelect">Bandwidth (kHz)</label>
+                            </div>
+                            <select class="custom-select" id="bwSelect">
+                                <option selected>Select</option>
+                                <option value="1">125</option>
+                                <option value="2">250</option>
+                                <option value="3">Random</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="input-group mb-3">
+                            <div class="input-group-prepend">
+                                <label class="input-group-text" for="sfSelect">Spreading Factor (SF)</label>
+                            </div>
+                            <select class="custom-select" id="sfSelect">
+                                <option selected>Select</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+
+                <h3>Environment Settings</h1>
+                    <div class="form-row">
+                        <div class="col">
+                            <label for="burialDepthInput">Burial Depth (m)</label>
+                            <input type="text" class="form-control" id="burialDepthInput">
+                        </div>
+                        <div class="col">
+                            <label for="vwcInput">Volumetric Water Content (VWC)</label>
+                            <input type="text" class="form-control" id="vwcInput">
+                        </div>
+                        <div class="col">
+                            <label for="sandFrac">Sand%</label>
+                            <input type="text" class="form-control" id="sandFrac">
+                        </div>
+                        <div class="col">
+                            <label for="clayFrac">Clay%</label>
+                            <input type="text" class="form-control" id="clayFrac">
+                        </div>
+                    </div>
+        </form>
+    </div> -->
+
+    <div class="container">
+        <form action="/lws_web" method="POST">
+            {% csrf_token %}
+            <div class="form-group">
+                <h3>Regional Transmission Settings</h3>
+                <div class="form-row">
+                    {% for field in form.visible_fields %}
+                    <div class="col">
+                        <div class="input-group-mb3">
+
+                            <label for={{field.id_for_label}}><b>{{field.label}}</b></label>
+                            {% render_field field class="custom-select"%}
+
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+            <!-- <input type="submit" value="Submit"> -->
+        </form>
+    </div>
+</body>
+
+</html>

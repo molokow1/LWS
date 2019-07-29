@@ -3,9 +3,9 @@ import numpy as np
 import random
 import subprocess
 import json
-import os 
-import datetime 
-import csv 
+import os
+import datetime
+import csv
 from collections import OrderedDict
 
 from lws.region_params import RegionalParams
@@ -16,13 +16,16 @@ def calc_ALOHA_DER(num_transmitters, air_time, trans_rate):
     der = np.exp(-2 * num_transmitters * air_time * trans_rate)
     return der
 
+
 def calc_max_range(Ptx, GL, sens, freq):
-    beforeLog = (Ptx + GL - sens - 32.4) / 20 -  math.log10(freq)
+    beforeLog = (Ptx + GL - sens - 32.4) / 20 - math.log10(freq)
     maxRange = math.pow(10, (beforeLog))
     return maxRange
 
 # this function computes the airtime of a packet
 # according to LoraDesignGuide_STD.pdf
+
+
 def airtime(sf, cr, pl, bw):
     H = 0        # implicit header disabled (H=0) or not (H=1)
     DE = 0       # low data rate optimization enabled (=1) or not (=0)
@@ -37,12 +40,12 @@ def airtime(sf, cr, pl, bw):
 
     Tsym = (2.0**sf)/bw
     Tpream = (Npream + 4.25)*Tsym
-    print("sf", sf, " cr", cr, "pl", pl, "bw", bw)
+    # print("sf", sf, " cr", cr, "pl", pl, "bw", bw)
     payloadSymbNB = 8 + \
         max(math.ceil((8.0*pl-4.0*sf+28+16-20*H)/(4.0*(sf-2*DE)))*(cr+4), 0)
     Tpayload = payloadSymbNB * Tsym
     return Tpream + Tpayload
-    
+
 
 def generate_random_end_device_positions(num_end_devices, max_dist, bs_x, bs_y):
     device_pos_arr = []
@@ -51,10 +54,10 @@ def generate_random_end_device_positions(num_end_devices, max_dist, bs_x, bs_y):
         found = False
         rounds = 0
         pos_x = 0.0
-        pos_y = 0.0 
+        pos_y = 0.0
         while found == False and rounds < 100:
             a = random.random()
-            b = random.uniform(a,1.0)
+            b = random.uniform(a, 1.0)
 
             pos_x = b * max_dist * math.cos(2 * math.pi * a/b) + bs_x
             pos_y = b * max_dist * math.sin(2 * math.pi * a/b) + bs_x
@@ -70,36 +73,40 @@ def generate_random_end_device_positions(num_end_devices, max_dist, bs_x, bs_y):
                     else:
                         rounds += 1
                         if rounds == 100:
-                            print("Could not place a new node randomly due to tight spaces")
+                            print(
+                                "Could not place a new node randomly due to tight spaces")
                             exit(-1)
             else:
                 save_x = pos_x
                 save_y = pos_y
                 found = True
 
-        dist_to_bs = np.sqrt(abs(save_x - bs_x) ** 2 + abs(save_y - bs_y) ** 2) 
+        dist_to_bs = np.sqrt(abs(save_x - bs_x) ** 2 + abs(save_y - bs_y) ** 2)
         device_pos_arr.append((save_x, save_y, dist_to_bs))
-    
+
     return device_pos_arr
 
 
 class FileUtils(object):
-#creates a subfolder in the sim_result folder for different simulation session
-#can be inherited to change the dateformat which is the prefix for the subfolders. can also change the headline for the result file to indicate the columns (TODO: modify this class to output a csv file instead of a .dat file)
-#This class is also able to read the result csv file and return a dict with appropriate k-v relations
+    # creates a subfolder in the sim_result folder for different simulation session
+    # can be inherited to change the dateformat which is the prefix for the subfolders. can also change the headline for the result file to indicate the columns (TODO: modify this class to output a csv file instead of a .dat file)
+    # This class is also able to read the result csv file and return a dict with appropriate k-v relations
 
     # sim_result_folder_path = os.path.join(os.getcwd(), "sim_result")
     date_format = '%Y-%m-%d-%H-%M-%S'
 
     result_headline = "nrNodes nrCollisions nrLost pktsSent OverallEnergy DER Retransmissions RetransmissionRate\r\n"
 
-    result_csv_header = ['num_nodes', 'num_collisions', 'num_lost', 'pkts_sent', 'energy_consumption', 'DER', 'retransmissions', 'retransmission_rate']
+    result_csv_header = ['num_nodes', 'num_collisions', 'num_lost', 'pkts_sent',
+                         'energy_consumption', 'DER', 'retransmissions', 'retransmission_rate']
 
-    def __init__(self, sim_result_folder_path = None):
+    def __init__(self, sim_result_folder_path=None):
         if sim_result_folder_path == None:
-            self.sim_result_folder_path = os.path.join(os.getcwd(), "sim_result")
+            self.sim_result_folder_path = os.path.join(
+                os.getcwd(), "sim_result")
         else:
-            self.sim_result_folder_path = os.path.join(os.getcwd(), sim_result_folder_path)
+            self.sim_result_folder_path = os.path.join(
+                os.getcwd(), sim_result_folder_path)
 
         self.most_recent_file = None
 
@@ -107,11 +114,13 @@ class FileUtils(object):
         if not os.path.exists(self.sim_result_folder_path):
             os.mkdir(self.sim_result_folder_path)
 
-    def create_new_session(self, session_name = "", use_date_in_file_name = True):
-        self.current_session = '-'.join([session_name,datetime.datetime.now().strftime(self.date_format)]) 
+    def create_new_session(self, session_name="", use_date_in_file_name=True):
+        self.current_session = '-'.join([session_name,
+                                         datetime.datetime.now().strftime(self.date_format)])
         # self.current_session = session_name + datetime.datetime.now().strftime(self.date_format)
         self._create_result_folder()
-        self._current_session_path = os.path.join(self.sim_result_folder_path, self.current_session)
+        self._current_session_path = os.path.join(
+            self.sim_result_folder_path, self.current_session)
         os.mkdir(os.path.join(self.sim_result_folder_path, self.current_session))
 
     @property
@@ -129,21 +138,24 @@ class FileUtils(object):
 
     def _init_sim_result_csv_file(self, file_name):
         self.current_file_name = file_name + '.csv'
-        
+
         f = os.path.join(self._current_session_path, self.current_file_name)
         if not os.path.isfile(f):
             with open(f, 'a', newline='') as csv_file:
-                writer = csv.DictWriter(csv_file, fieldnames=self.result_csv_header)
+                writer = csv.DictWriter(
+                    csv_file, fieldnames=self.result_csv_header)
                 writer.writeheader()
             csv_file.close()
         return f
-    
+
     def write_sim_result_to_csv(self, result_dict, file_name):
         if not hasattr(self, "current_session"):
-            raise AttributeError("Need to create a new session first by using the createNewSession method.")
+            raise AttributeError(
+                "Need to create a new session first by using the createNewSession method.")
         file_path = self._init_sim_result_csv_file(file_name)
         with open(file_path, 'a') as csv_file:
-            writer = csv.DictWriter(csv_file, fieldnames=self.result_csv_header)
+            writer = csv.DictWriter(
+                csv_file, fieldnames=self.result_csv_header)
             writer.writerow(result_dict)
         csv_file.close()
         self.most_recent_file = file_path
@@ -155,10 +167,11 @@ class FileUtils(object):
         with open(filePath, "a") as open_file:
             open_file.write(write_str)
         open_file.close()
-        print("Simulation result successfully stored in {}.dat".format(self.current_session + "/" + file_name))
+        print("Simulation result successfully stored in {}.dat".format(
+            self.current_session + "/" + file_name))
 
     def read_csv_file(self, file_path=''):
-        #if file_path is empty, read the most recent written file
+        # if file_path is empty, read the most recent written file
         if file_path == '':
             read_file_path = self.most_recent_file
 
@@ -167,8 +180,9 @@ class FileUtils(object):
 
         ret_dict = {key: [] for key in self.result_csv_header}
         with open(read_file_path, 'r') as csv_file:
-            reader = csv.DictReader(csv_file, fieldnames=self.result_csv_header)
-            next(reader,None) # skip the headers 
+            reader = csv.DictReader(
+                csv_file, fieldnames=self.result_csv_header)
+            next(reader, None)  # skip the headers
             for row in reader:
                 for h in self.result_csv_header:
                     ret_dict[h].append(row[h])
@@ -176,9 +190,8 @@ class FileUtils(object):
         return ret_dict
 
 
-
 class ConfigReader(object):
-    #Read a json config file lora_sim_config.json
+    # Read a json config file lora_sim_config.json
 
     # this is an array with measured values for sensitivity
     # see paper, Table 3
@@ -197,9 +210,9 @@ class ConfigReader(object):
         self.__calcAdditionalParams()
 
     def __setRegionFrequencies(self):
-        #TODO: these frequencies need to be more detailed
-        #can use https://www.thethingsnetwork.org/docs/lorawan/frequency-plans.html as reference
-        #also add auto sf and bw selection
+        # TODO: these frequencies need to be more detailed
+        # can use https://www.thethingsnetwork.org/docs/lorawan/frequency-plans.html as reference
+        # also add auto sf and bw selection
         if self.region == "AU":
             self.__configData["centreFreqList"] = RegionalParams.AU_FREQ
             # [915e+6, 916e+6, 917e+6, 918e+6]
@@ -225,9 +238,8 @@ class ConfigReader(object):
 
         self.__configData["Lpl"] = self.pTx - self.__configData["minSens"]
 
-        
         if self.useAutoMaxDist is True:
-            #calculate the maximum distance of lorawan using the urban pathloss model
+            # calculate the maximum distance of lorawan using the urban pathloss model
             self.__configData["maxDist"] = self.d0 * \
                 (math.e**((self.Lpl-self.Lpld0)/(10.0*self.gamma)))
 
@@ -244,10 +256,10 @@ class ConfigReader(object):
     def experiment(self):
         return self.__configData["experiment"]
 
-    @experiment.setter 
-    def experiment(self,value):
+    @experiment.setter
+    def experiment(self, value):
         self.__configData["experiment"] = value
-        
+
     @property
     def configData(self):
         return self.__configData
@@ -375,11 +387,11 @@ class ConfigReader(object):
     @property
     def nodeSF(self):
         return self.__configData["nodeSettings"]["SF"]
-    
+
     @property
     def nodeCR(self):
         return self.__configData["nodeSettings"]["CR"]
-    
+
     @property
     def nodeBW(self):
         return self.__configData["nodeSettings"]["BW"]
@@ -407,17 +419,17 @@ class ConfigReader(object):
     @property
     def numBasestations(self):
         return self.__configData["simulationParams"]["numBasestations"]
-    
+
     @property
     def avgSendTime(self):
-        #in minutes
+        # in minutes
         return self.__configData["simulationParams"]["avgSendTime"]
-    
+
     @property
     def simTime(self):
-        #in hours
+        # in hours
         return self.__configData["simulationParams"]["simTime"]
-    
+
     @property
     def pathLossModelType(self):
         return self.__configData["simulationParams"]["pathLossModelType"]
@@ -433,7 +445,7 @@ class ConfigReader(object):
     @property
     def RX1_DELAY(self):
         return self.__configData["nodeSettings"]["RX1_DELAY"]
-    
+
     @property
     def RX2_DELAY(self):
         return self.__configData["nodeSettings"]["RX2_DELAY"]
@@ -449,11 +461,11 @@ class ConfigReader(object):
     @property
     def enableACKTest(self):
         return self.__configData["ACKSettings"]["enableACKTest"]
-    
+
     @property
     def nodeSens(self):
         return self.__configData["nodeSettings"]["sensitivity"]
-    
+
     @property
     def enableDutyCycle(self):
         return self.__configData["dutyCycleSettings"]["enableDutyCycle"]
@@ -466,9 +478,7 @@ class ConfigReader(object):
         return str(self.__configData)
 
 
-
-
 if __name__ == '__main__':
     fileUtils = FileUtils()
     fileUtils.create_new_session()
-    fileUtils.write_sim_result("hello", file_name = "test")
+    fileUtils.write_sim_result("hello", file_name="test")
