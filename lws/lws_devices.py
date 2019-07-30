@@ -3,7 +3,7 @@ from enum import Enum
 import random
 
 import simpy
-from lws.lws_utils import ConfigReader, airtime
+from lws.lws_utils import ConfigReader, airtime, mins_to_ms
 from lws.path_loss_model import soil_path_loss_model
 
 
@@ -201,18 +201,25 @@ class EndDevice(LWSDevice):
 
     def send_uplink(self, device_id):
         # initial delay
-        yield self.env.timeout(random.expovariate(1.0/float(self.global_config.avgSendTime)))
+        send_time_ms = mins_to_ms(self.global_config.avgSendTime)
+
+        initial_delay = random.expovariate(
+            1.0/float(send_time_ms))
+        # print("Initial delay: {}".format(initial_delay))
+        yield self.env.timeout(initial_delay)
 
         packet = self.make_packet(
             self.pkt_type, self.global_config.pktLen, self.env.now)
 
         rssi = self._calc_rssi(packet.freq)
 
-        self.env.process(self.send_packet(
-            (packet, rssi), device_id, self.env.now))
-
+        # print("Airtime: {}".format(packet.airtime))
         # airtime delay
         yield self.env.timeout(packet.airtime)
+
+        self.env.process(self.send_packet(
+            (packet, rssi), device_id, self.env.now))
+        print("Sent at {}".format(self.env.now))
 
     def _calc_rssi(self, freq):
         pathloss = self._pathloss_model.calc_approximated_path_loss(
@@ -246,12 +253,27 @@ class BaseStation(LWSDevice):
     def receive_packet(self, from_device):
         recv_conn = self.recv_conns[from_device]
         packet, rssi = yield recv_conn.get()
-        # print("Received packet {} at {}".format(packet, self.env.now))
+        print("Received packet {} at {}".format(rssi, self.env.now))
         self.recv_pkts[from_device].append(packet)
         self.recv_rssis[from_device].append(rssi)
 
+    def _calc_sensitivity(self, sf, bw):
+        return self.global_config.sensitivity_list[sf - 7, [125, 250, 500].index(bw) + 1]
+
     def receive_uplink(self, from_device):
-        self.env.process(self.receive_packet(from_device))
+        recv_conn = self.recv_conns[from_device]
+        packet, rssi = yield recv_conn.get()
+        self.recv_pkts[from_device].append(packet)
+        self.recv_rssis[from_device].append(rssi)
+        # print("{}th Packet with RSSI: {:10.2f} at {:10.2f}".format(
+        # len(self.recv_pkts[from_device]), rssi, self.env.now))
+        sens = self._calc_sensitivity(packet.sf, packet.bw)
+        if rssi < sens:
+            print("Packet Lost")
+            # packet lost
+        else:
+            print("Packet not lost")
+            # check collision
 
 
 def create_full_duplex_connection(end_device, basestation):

@@ -22,10 +22,17 @@ def calc_max_range(Ptx, GL, sens, freq):
     maxRange = math.pow(10, (beforeLog))
     return maxRange
 
+
+def mins_to_ms(val):
+    return int(val * 60 * 1000)
+
+
+def hours_to_ms(val):
+    return int(val * 60 * 60 * 1000)
+
+
 # this function computes the airtime of a packet
 # according to LoraDesignGuide_STD.pdf
-
-
 def airtime(sf, cr, pl, bw):
     H = 0        # implicit header disabled (H=0) or not (H=1)
     DE = 0       # low data rate optimization enabled (=1) or not (=0)
@@ -265,7 +272,7 @@ class ConfigReader(object):
         return self.__configData
 
     @property
-    def sensitivityList(self):
+    def sensitivity_list(self):
         return self.__configData["sensitivityList"]
 
     @property

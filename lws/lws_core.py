@@ -4,18 +4,6 @@ from lws.lws_devices import EndDevice, BaseStation, PacketType
 from lws_utils import generate_random_end_device_positions
 
 
-def mins_to_ms(val):
-    return int(val * 60 * 1000)
-
-
-def hours_to_ms(val):
-    return int(val * 60 * 60 * 1000)
-
-
-class PathlossChecker:
-    pass
-
-
 class LWSCore():
     def __init__(self, global_config, override_global_config=False, new_config=None):
 
@@ -85,11 +73,7 @@ class LWSCore():
             # random initial send timeout
             env.process(end_device.send_uplink(self.base_station.device_id))
             # end_device.send
-
-            # airtime latency timeout
-            # check path loss here
-            # TODO: add a path loss checker class or something, make receive include an argument for rssi as well
-            # basestation.receive
+            env.process(self.base_station.receive_uplink(end_device.device_id))
 
             # downlink stuff here
 

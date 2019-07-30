@@ -96,30 +96,23 @@ class TestLWSUtils(unittest.TestCase):
             result_dict=self.test_dict, file_name='test_csv_file')
         # file_path = os.path.join(file_utils.current_session_path, 'test_csv_file.csv')
         # should be able to read the most recent saved file
-        print(file_utils.read_csv_file())
+        # print(file_utils.read_csv_file())
 
 
 def LWSDevices_test_loop(end_device, basestation, env):
     while True:
-        yield env.timeout(5)
+        yield env.timeout(1)
         env.process(end_device.send_uplink(basestation.device_id))
 
-        # env.process(end_device.send_packet("Packet 1 from end_device", basestation.device_id, env.now))
-        # print("Packet sent at " + str(env.now))
-        env.process(basestation.receive_packet(end_device.device_id))
-        print(basestation.recv_rssis)
-        yield env.timeout(5)
-        env.process(basestation.send_packet(
-            "Packet 2 from basestation", end_device.device_id))
+        env.process(basestation.receive_uplink(end_device.device_id))
 
-        env.process(end_device.receive_packet(basestation.device_id))
-        # print(basestation.received_packet)
+       # print(basestation.received_packet)
 
 
 class TestLWSDevices(unittest.TestCase):
     config = lws_utils.ConfigReader('../lora_sim_config.json')
 
-    SIM_TIME = 100
+    SIM_TIME = 24
 
     def test_message_passing(self):
         env = simpy.Environment()
@@ -133,7 +126,7 @@ class TestLWSDevices(unittest.TestCase):
         lws_devices.create_full_duplex_connection(end_device, basestation)
 
         env.process(LWSDevices_test_loop(end_device, basestation, env))
-        env.run(until=self.SIM_TIME)
+        env.run(until=lws_utils.hours_to_ms(self.SIM_TIME))
         # while env.peek() < self.SIM_TIME:
         #     env.step()
 
