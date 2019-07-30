@@ -1,7 +1,7 @@
 import simpy
 
 from lws.lws_devices import EndDevice, BaseStation, PacketType
-from lws_utils import generate_random_end_device_positions
+from lws_utils import generate_random_end_device_positions, mins_to_ms, hours_to_ms
 
 
 class LWSCore():
