@@ -38,30 +38,6 @@ class PacketType(Enum):
     RXTimingSetupAns = 17
 
 
-class TransmissionManager:
-
-    def __init__(self, env, lora_params):
-        self.env = env
-        self.store = simpy.Store(self.env)
-        self.lora_params = lora_params
-        self.latency = airtime(
-            sf=self.lora_params['sf'],
-            cr=self.lora_params['cr'],
-            pl=self.lora_params['pl'],
-            bw=self.lora_params['bw'],
-        )
-
-    def air_time_latency(self, value):
-        yield self.env.timeout(self.latency)
-        self.store.put(value)
-
-    def put_value(self, value):
-        self.env.process(self.air_time_latency(value))
-
-    def get_value(self):
-        return self.store.get()
-
-
 class Packet(object):
     def __init__(self, pkt_len, device_id, device_type, packet_type, timestamp, global_config):
         self.device_id = device_id
@@ -114,15 +90,34 @@ class LWSDevice(ABC):
         self._pkt_loss_count = 0
         self._pkt_collision_count = 0
 
-        self.event_list = []
-
         self.received_packet = None
+        self._event_mapping = {}
+        self._make_event_dict()
 
-    def add_event(self, timestamp, event):
-        self.event_list.append({
-            "timestamp": timestamp,
-            "event": event
-        })
+    def _make_event_dict(self):
+        self._event_dict = {}
+        for e in self.event_list:
+            self._event_dict[e] = self.env.event()
+
+    # def add_event(self, timestamp, event):
+    #     self.event_list.append({
+    #         "timestamp": timestamp,
+    #         "event": event
+    #     })
+
+    def add_event_mapping(self, device_id, event_dict):
+        self._event_mapping[device_id] = event_dict
+
+    @property
+    def event_mapping(self):
+        return self._event_mapping
+
+    def add_event_dict(self, event_dict):
+        self._event_dict = event_dict
+
+    @property
+    def event_dict(self):
+        return self._event_dict
 
     def init_params(self):
         # TODO: change the global_config attributes to better names e.g. device_sf
@@ -173,10 +168,18 @@ class LWSDevice(ABC):
     def device_type(self):
         raise NotImplementedError
 
+    @abstractproperty
+    def event_list(self):
+        raise NotImplementedError
+
 
 class EndDevice(LWSDevice):
 
     device_type = DeviceType.END_DEVICE
+
+    event_list = ["end_device_test_event"]
+    # the events that this class is capable of emitting by setting event.succeed()
+    # so that other devices that has established full duplex connection with this device can yield
 
     def __init__(self, device_id, x, y, dist, global_config, pkt_type, env):
         super().__init__(device_id, x, y, dist, global_config, env)
@@ -221,6 +224,18 @@ class EndDevice(LWSDevice):
             (packet, rssi), device_id, self.env.now))
         print("Sent at {}".format(self.env.now))
 
+    def event_test_proc(self):
+        while True:
+            yield self.env.timeout(random.randint(10, 20))
+
+            print("ED: starting event at {}".format(self.env.now))
+
+            self._trigger_event("end_device_test_event")
+
+    def _trigger_event(self, event_str):
+        self._event_dict[event_str].succeed()
+        self._event_dict[event_str] = self.env.event()
+
     def _calc_rssi(self, freq):
         pathloss = self._pathloss_model.calc_approximated_path_loss(
             freq, self.global_config.burialDepth, self.dist, self.global_config.baseStationHeight)
@@ -243,6 +258,8 @@ class EndDevice(LWSDevice):
 class BaseStation(LWSDevice):
 
     device_type = DeviceType.BASE_STATION
+
+    event_list = ["bs_test_event"]
 
     def __init__(self, device_id, x, y, dist, global_config, env):
         super().__init__(device_id, x, y, dist, global_config, env)
@@ -275,6 +292,15 @@ class BaseStation(LWSDevice):
             print("Packet not lost")
             # check collision
 
+    def event_test_proc(self):
+        while True:
+            # yield self.env.timeout(random.randint(20, 30))
+
+            print("BS: reacting to ed event at {}".format(self.env.now))
+
+            yield self._event_mapping[0]["end_device_test_event"]
+            print("BS: Got event trigger at {}".format(self.env.now))
+
 
 def create_full_duplex_connection(end_device, basestation):
     end_device_send_conn = end_device.create_sending_connection(
@@ -286,6 +312,9 @@ def create_full_duplex_connection(end_device, basestation):
         basestation.device_id, base_station_send_conn)
     basestation.add_receiving_connection(
         end_device.device_id, end_device_send_conn)
+
+    end_device.add_event_mapping(basestation.device_id, basestation.event_dict)
+    basestation.add_event_mapping(end_device.device_id, end_device.event_dict)
 
 
 if __name__ == "__main__":

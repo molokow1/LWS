@@ -4,3 +4,4 @@
 
 *LWSCore TODOs:*
 1. Modify the core transmit logic to a more maintainable and readable form in classes with simpy.env and simpy.Store (check simpy tutorial)
+2. Model the behaviours of LWSDevices with FSM 

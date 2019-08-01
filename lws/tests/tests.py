@@ -107,6 +107,7 @@ def LWSDevices_test_loop(end_device, basestation, env):
         env.process(basestation.receive_uplink(end_device.device_id))
 
        # print(basestation.received_packet)
+        print(env.active_process)
 
 
 class TestLWSDevices(unittest.TestCase):
@@ -124,11 +125,14 @@ class TestLWSDevices(unittest.TestCase):
             device_id='B0', x=0, y=1, dist=0, global_config=self.config, env=env)
 
         lws_devices.create_full_duplex_connection(end_device, basestation)
+        print(end_device.event_mapping)
+        print(basestation.event_mapping)
+        # env.process(LWSDevices_test_loop(end_device, basestation, env))
+        # env.run(until=lws_utils.mins_to_ms(self.SIM_TIME))
+        env.process(end_device.event_test_proc())
+        env.process(basestation.event_test_proc())
 
-        env.process(LWSDevices_test_loop(end_device, basestation, env))
-        env.run(until=lws_utils.hours_to_ms(self.SIM_TIME))
-        # while env.peek() < self.SIM_TIME:
-        #     env.step()
+        env.run(until=100)
 
 
 if __name__ == "__main__":
