@@ -39,23 +39,21 @@ class PacketType(Enum):
 
 
 class Packet(object):
-    def __init__(self, pkt_len, device_id, device_type, packet_type, timestamp, global_config):
+    def __init__(self, device_id, device_type, packet_type, timestamp, lora_params):
         self.device_id = device_id
         self.device_type = device_type
-        self.pkt_len = pkt_len
         self.packet_type = packet_type
-        self.global_config = global_config
+        self._set_lora_params(lora_params)
         self.timestamp = timestamp
         self._rssi = None
-        self.set_lora_params()
 
-    def set_lora_params(self):
-        self.freq = random.choice(self.global_config.centreFreqList)
-        self.sf = self.global_config.nodeSF
-        self.cr = self.global_config.nodeCR
-        self.bw = self.global_config.nodeBW
-        self.tx_pow = self.global_config.pTx
-
+    def _set_lora_params(self, lora_params):
+        self.freq = lora_params['freq']
+        self.sf = lora_params['sf']
+        self.cr = lora_params['cr']
+        self.bw = lora_params['bw']
+        self.tx_pow = lora_params['tx_pow']
+        self.pkt_len = lora_params['pkt_len']
         # self.trans_range = 150
         self.symbol_time = (2.0**self.sf)/self.bw
         # self.arrive_time = 0
@@ -112,9 +110,6 @@ class LWSDevice(ABC):
     def event_mapping(self):
         return self._event_mapping
 
-    def add_event_dict(self, event_dict):
-        self._event_dict = event_dict
-
     @property
     def event_dict(self):
         return self._event_dict
@@ -124,7 +119,18 @@ class LWSDevice(ABC):
         self.sf = self.global_config.nodeSF
         self.cr = self.global_config.nodeCR
         self.bw = self.global_config.nodeBW
-        self.txPow = self.global_config.pTx
+        self.tx_pow = self.global_config.pTx
+        self.pkt_len = self.global_config.pktLen
+
+    @property
+    def lora_params(self):
+        return {
+            'sf': self.sf,
+            'cr': self.cr,
+            'bw': self.bw,
+            'tx_pow': self.tx_pow,
+            'pkt_len': self.pkt_len,
+        }
 
     @abstractmethod
     def send_packet(self, packet, target_device):
@@ -133,6 +139,10 @@ class LWSDevice(ABC):
     @abstractmethod
     def receive_packet(self, packet, from_device, status, timestamp):
         pass
+
+    def _trigger_event(self, event_str):
+        self._event_dict[event_str].succeed()
+        self._event_dict[event_str] = self.env.event()
 
     def create_sending_connection(self, device_id):
         self.send_conns[device_id] = simpy.Store(self.env)
@@ -143,10 +153,9 @@ class LWSDevice(ABC):
         self.recv_pkts[device_id] = []
         self.recv_rssis[device_id] = []
 
-    def make_packet(self, packet_type, length, timestamp):
-        packet = Packet(pkt_len=length, device_id=self.device_id, device_type=self.device_type,
-                        packet_type=packet_type, timestamp=timestamp, global_config=self.global_config)
-        return packet
+    def make_packet(self, packet_type, timestamp):
+        return Packet(device_id=self.device_id, device_type=self.device_type,
+                      packet_type=packet_type, timestamp=timestamp, lora_params=self.lora_params)
 
     @property
     def num_pkt_sent(self):
@@ -177,7 +186,7 @@ class EndDevice(LWSDevice):
 
     device_type = DeviceType.END_DEVICE
 
-    event_list = ["end_device_test_event"]
+    event_list = ["ed_polling_event", "ed_interrupt"]
     # the events that this class is capable of emitting by setting event.succeed()
     # so that other devices that has established full duplex connection with this device can yield
 
@@ -211,9 +220,7 @@ class EndDevice(LWSDevice):
         # print("Initial delay: {}".format(initial_delay))
         yield self.env.timeout(initial_delay)
 
-        packet = self.make_packet(
-            self.pkt_type, self.global_config.pktLen, self.env.now)
-
+        packet = self.make_packet(self.pkt_type, self.env.now)
         rssi = self._calc_rssi(packet.freq)
 
         # print("Airtime: {}".format(packet.airtime))
@@ -230,11 +237,7 @@ class EndDevice(LWSDevice):
 
             print("ED: starting event at {}".format(self.env.now))
 
-            self._trigger_event("end_device_test_event")
-
-    def _trigger_event(self, event_str):
-        self._event_dict[event_str].succeed()
-        self._event_dict[event_str] = self.env.event()
+            self._trigger_event("ed_polling_event")
 
     def _calc_rssi(self, freq):
         pathloss = self._pathloss_model.calc_approximated_path_loss(
@@ -259,7 +262,7 @@ class BaseStation(LWSDevice):
 
     device_type = DeviceType.BASE_STATION
 
-    event_list = ["bs_test_event"]
+    event_list = ["bs_polling_event", "bs_interrupt"]
 
     def __init__(self, device_id, x, y, dist, global_config, env):
         super().__init__(device_id, x, y, dist, global_config, env)
@@ -298,7 +301,7 @@ class BaseStation(LWSDevice):
 
             print("BS: reacting to ed event at {}".format(self.env.now))
 
-            yield self._event_mapping[0]["end_device_test_event"]
+            yield self._event_mapping[0]["ed_polling_event"]
             print("BS: Got event trigger at {}".format(self.env.now))
 
 
