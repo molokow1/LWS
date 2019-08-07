@@ -37,18 +37,18 @@ class SimulationSettingsForm(forms.Form):
 
     environment_settings_header = "Environment Settings"
     env_burial_depth = forms.DecimalField(
-        label="Burial Depth (m)", required=True, min_value=0, localize=True)
+        label="Burial Depth (m)", required=True, min_value=0, localize=True, initial=0.5)
     env_vwc = forms.DecimalField(
-        label="VWC (%)", required=True, min_value=0, localize=True)
+        label="VWC (%)", required=True, min_value=0, localize=True, initial=0.2)
     env_sand = forms.DecimalField(
-        label="Sand (%)", required=True, min_value=0, localize=True)
+        label="Sand (%)", required=True, min_value=0, localize=True, initial=0.3)
     env_clay = forms.DecimalField(
-        label="Clay (%)", required=True, min_value=0, localize=True)
+        label="Clay (%)", required=True, min_value=0, localize=True, initial=0.2)
 
     simulation_settings_header = "Simulation Parameters"
 
     sim_duration = forms.DecimalField(
-        label="Simulation Duration (Hr)", required=True, min_value=0, localize=True)
+        label="Simulation Duration (Hr)", required=True, min_value=0, localize=True, initial=2)
 
     sim_avg_send_time = forms.DecimalField(
-        label="Average Send Time (Mins)", required=True, min_value=0, localize=True)
+        label="Average Send Time (Mins)", required=True, min_value=0, localize=True, initial=10)

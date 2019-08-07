@@ -2,7 +2,7 @@
 {% load widget_tweaks %}
 
 <head>
-    <title>LWS</title>
+    <title>Simulation Parameters</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
         integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
@@ -16,7 +16,7 @@
     </div>
 
     <div class="container">
-        <form action="/lws_web" method="POST">
+        <form action='' method="POST">
             {% csrf_token %}
             <div class="form-group">
                 <h3>{{form.regional_settings_header}}</h3>
