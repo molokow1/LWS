@@ -1,4 +1,5 @@
 import os
+import sys
 import subprocess
 import unittest
 import numpy as np
@@ -134,10 +135,24 @@ class TestLWSDevices(unittest.TestCase):
 
         env.run(until=100)
 
+    def test_end_device_fsm(self):
+        env = simpy.Environment()
+
+        end_device = lws_devices.EndDevice(
+            device_id=0, x=3, y=4, dist=5, global_config=self.config, pkt_type=lws_devices.PacketType.Data, env=env)
+
+        env.process(end_device.start_fsm(device_id=0))
+
+        env.run(until=43200000)
+
 
 if __name__ == "__main__":
+    orig_stdout = sys.stdout
+    test_result_file = open("test_result_file.txt", 'w')
+    sys.stdout = test_result_file
     unittest.main(exit=False)
     # delete the test folder
     if (os.path.exists(os.path.join(os.getcwd(), test_folder_path))):
         subprocess.call(["rm", "-R", test_folder_path])
         print("Test folder cleaned up.")
+    test_result_file.close()

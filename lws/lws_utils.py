@@ -23,12 +23,20 @@ def calc_max_range(Ptx, GL, sens, freq):
     return maxRange
 
 
+def ms_to_date_time(timestamp):
+    return datetime.datetime.fromtimestamp(timestamp)
+
+
+def ms_to_mins(val):
+    return val / (60000)
+
+
 def mins_to_ms(val):
-    return int(val * 60 * 1000)
+    return int(val * 60000)
 
 
 def hours_to_ms(val):
-    return int(val * 60 * 60 * 1000)
+    return int(val * 3600000)
 
 
 # this function computes the airtime of a packet
