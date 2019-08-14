@@ -24,7 +24,8 @@ def calc_max_range(Ptx, GL, sens, freq):
 
 
 def ms_to_date_time(timestamp):
-    return datetime.datetime.fromtimestamp(timestamp)
+    # as fromtimestamp method expects unix timestamp in second, timestamp will be converted from ms to s
+    return datetime.datetime.fromtimestamp(int(timestamp / 1e3))
 
 
 def ms_to_mins(val):

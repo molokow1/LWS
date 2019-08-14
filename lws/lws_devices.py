@@ -273,9 +273,12 @@ class EndDevice(LWSDevice):
                 pre_transmission_delay = mins_to_ms(pre_transmission_delay)
                 print("pre_transmission_delay :{0:.2f}mins".format(
                     ms_to_mins(pre_transmission_delay)))
-
+                pre_timeout_time = self.env.now
                 yield self.env.timeout(pre_transmission_delay)
-
+                after_timeout_time = self.env.now
+                time_elapsed = after_timeout_time - pre_timeout_time
+                print("Time elapsed : {0:.2f} mins".format(
+                    ms_to_mins(time_elapsed)))
                 self._current_state = EndDeviceStates.TRANSMIT
 
             elif self._current_state == EndDeviceStates.TRANSMIT:

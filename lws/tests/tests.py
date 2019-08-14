@@ -148,7 +148,7 @@ class TestLWSDevices(unittest.TestCase):
 
 if __name__ == "__main__":
     orig_stdout = sys.stdout
-    test_result_file = open("test_result_file.txt", 'w')
+    test_result_file = open("test_result_file.dat", 'w')
     sys.stdout = test_result_file
     unittest.main(exit=False)
     # delete the test folder
