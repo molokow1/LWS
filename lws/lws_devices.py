@@ -48,7 +48,7 @@ class Packet(object):
         self._rssi = None
 
     def _set_lora_params(self, lora_params):
-        self.freq = lora_params['freq']
+        self.freq = random.choice(lora_params['freq_list'])
         self.sf = lora_params['sf']
         self.cr = lora_params['cr']
         self.bw = lora_params['bw']
@@ -71,6 +71,14 @@ class EndDeviceStates(Enum):
     RX1_RECV = 5
     RX2_DELAY = 6
     RX2_RECV = 7
+
+
+class BasestationStates(Enum):
+    START = 1
+    WAIT_FOR_UPLINK = 2
+    PROCESS_UPLINK = 3
+    SEND_DOWNLINK_RX1 = 4
+    SEND_DOWNLINK_RX2 = 5
 
 
 class LWSDevice(ABC):
@@ -100,8 +108,9 @@ class LWSDevice(ABC):
 
         self.received_packet = None
         self._event_mapping = {}
-        self._current_state = EndDeviceStates.START
-        self._next_state = EndDeviceStates.START
+
+        # self._current_state = None
+
         self._make_event_dict()
 
     def _make_event_dict(self):
@@ -137,9 +146,11 @@ class LWSDevice(ABC):
         self.tx_pow = self.global_config.pTx
         self.pkt_len = self.global_config.pktLen
 
+    # return a dict of lora_params
     @property
     def lora_params(self):
         return {
+            'freq_list': self.global_config.centreFreqList,
             'sf': self.sf,
             'cr': self.cr,
             'bw': self.bw,
@@ -201,14 +212,14 @@ class EndDevice(LWSDevice):
 
     device_type = DeviceType.END_DEVICE
 
-    event_list = ["ed_polling_event", "ed_interrupt"]
+    event_list = ["uplink_sent", "ed_polling_event"]
     # the events that this class is capable of emitting by setting event.succeed()
     # so that other devices that has established full duplex connection with this device can yield
 
     def __init__(self, device_id, x, y, dist, global_config, pkt_type, env):
         super().__init__(device_id, x, y, dist, global_config, env)
         self.pkt_type = pkt_type
-
+        self._current_state = EndDeviceStates.START
         # end_device specific stats
         self._num_pkt_retransmitted = 0
         self._downlink_loss_count = 0
@@ -254,7 +265,8 @@ class EndDevice(LWSDevice):
 
             self._trigger_event("ed_polling_event")
 
-    def start_fsm(self, device_id):
+    def start_fsm(self, from_device_id):
+        send_conn = self.send_conns[from_device_id]
         while True:
 
             if self._current_state == EndDeviceStates.START:
@@ -265,30 +277,30 @@ class EndDevice(LWSDevice):
             elif self._current_state == EndDeviceStates.PRE_TRANSMIT_WAIT:
                 print("Entered: {} at {}".format(
                     self._current_state, ms_to_date_time(self.env.now)))
-                send_time_ms = mins_to_ms(self.global_config.avgSendTime)
 
                 pre_transmission_delay = random.expovariate(
                     1.0 / float(self.global_config.avgSendTime))
 
                 pre_transmission_delay = mins_to_ms(pre_transmission_delay)
+
                 print("pre_transmission_delay :{0:.2f}mins".format(
                     ms_to_mins(pre_transmission_delay)))
-                pre_timeout_time = self.env.now
+
                 yield self.env.timeout(pre_transmission_delay)
-                after_timeout_time = self.env.now
-                time_elapsed = after_timeout_time - pre_timeout_time
-                print("Time elapsed : {0:.2f} mins".format(
-                    ms_to_mins(time_elapsed)))
+
                 self._current_state = EndDeviceStates.TRANSMIT
 
             elif self._current_state == EndDeviceStates.TRANSMIT:
 
-                # packet = self.make_packet(self.pkt_type, self.env.now)
-                # rssi = self._calc_rssi(packet.freq)
+                packet = self.make_packet(self.pkt_type, self.env.now)
+                rssi = self._calc_rssi(packet.freq)
 
-                # self.send_packet((packet, rssi), device_id, self.env.now)
                 print("Entered: {} at {}".format(
                     self._current_state, ms_to_date_time(self.env.now)))
+
+                # send packet
+                yield send_conn.put((packet, rssi))
+                self._trigger_event("uplink_sent")
                 self._current_state = EndDeviceStates.START
 
             elif self._current_state == EndDeviceStates.RX1_DELAY:
@@ -329,6 +341,7 @@ class BaseStation(LWSDevice):
 
     def __init__(self, device_id, x, y, dist, global_config, env):
         super().__init__(device_id, x, y, dist, global_config, env)
+        self._current_state = BasestationStates.START
 
     def send_packet(self, packet, target_device):
         yield self.send_conns[target_device].put(packet)
@@ -340,9 +353,32 @@ class BaseStation(LWSDevice):
         self.recv_pkts[from_device].append(packet)
         self.recv_rssis[from_device].append(rssi)
 
-    def start_fsm(self):
+    def start_fsm(self, from_device_id):
+        event_dict = self._event_mapping[from_device_id]
+        recv_conn = self.recv_conns[from_device_id]
         while True:
-            pass
+            if self._current_state == BasestationStates.START:
+                print("BS: Entered START at {}".format(
+                    ms_to_date_time(self.env.now)))
+                self._current_state = BasestationStates.WAIT_FOR_UPLINK
+                # yield self.env.timeout(1)
+
+            elif self._current_state == BasestationStates.WAIT_FOR_UPLINK:
+                print("BS: Entered WAIT_FOR_UPLINK at {}".format(
+                    ms_to_date_time(self.env.now)))
+                yield event_dict["uplink_sent"]
+                print("BS: got uplink event at: {}".format(
+                    ms_to_date_time(self.env.now)))
+                packet, rssi = yield recv_conn.get()
+                print("BS: Received packet {} at {}".format(
+                    rssi, ms_to_date_time(self.env.now)))
+                self._current_state = BasestationStates.START
+            elif self._current_state == BasestationStates.PROCESS_UPLINK:
+                pass
+            elif self._current_state == BasestationStates.SEND_DOWNLINK_RX1:
+                pass
+            elif self._current_state == BasestationStates.SEND_DOWNLINK_RX2:
+                pass
 
     def _calc_sensitivity(self, sf, bw):
         return self.global_config.sensitivity_list[sf - 7, [125, 250, 500].index(bw) + 1]

@@ -140,10 +140,13 @@ class TestLWSDevices(unittest.TestCase):
 
         end_device = lws_devices.EndDevice(
             device_id=0, x=3, y=4, dist=5, global_config=self.config, pkt_type=lws_devices.PacketType.Data, env=env)
+        basestation = lws_devices.BaseStation(
+            device_id='B0', x=0, y=1, dist=0, global_config=self.config, env=env)
+        lws_devices.create_full_duplex_connection(end_device, basestation)
+        env.process(end_device.start_fsm(from_device_id=basestation.device_id))
+        env.process(basestation.start_fsm(from_device_id=end_device.device_id))
 
-        env.process(end_device.start_fsm(device_id=0))
-
-        env.run(until=43200000)
+        env.run(until=lws_utils.hours_to_ms(12))
 
 
 if __name__ == "__main__":
