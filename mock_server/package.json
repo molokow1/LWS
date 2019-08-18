@@ -1,0 +1,17 @@
+{
+  "name": "mock_server",
+  "version": "1.0.0",
+  "description": "mock_server for frontend development",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "casual": "^1.6.2",
+    "faker": "^4.1.0",
+    "json-server": "^0.15.0"
+  }
+}

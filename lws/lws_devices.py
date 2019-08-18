@@ -301,14 +301,24 @@ class EndDevice(LWSDevice):
                 # send packet
                 yield send_conn.put((packet, rssi))
                 self._trigger_event("uplink_sent")
-                self._current_state = EndDeviceStates.START
+
+                if packet.packet_type == PacketType.Data:
+                    self._current_state = EndDeviceStates.START
+                else:
+                    self._current_state = EndDeviceStates.RX1_DELAY
 
             elif self._current_state == EndDeviceStates.RX1_DELAY:
-                pass
+                # convert RX1_DELAY from s to ms
+                yield self.env.timeout(self.global_config.RX1_DELAY * 1000)
+                self._current_state = EndDeviceStates.RX1_RECV
+
             elif self._current_state == EndDeviceStates.RX1_RECV:
                 pass
+
             elif self._current_state == EndDeviceStates.RX2_DELAY:
-                pass
+                yield self.env.timeout(self.global_config.RX2_DELAY * 1000)
+                self._current_state = EndDeviceStates.RX2_RECV
+
             elif self._current_state == EndDeviceStates.RX2_RECV:
                 pass
             else:

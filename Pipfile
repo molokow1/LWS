@@ -16,6 +16,8 @@ psutil = "*"
 bottle = "*"
 django = "*"
 django-widget-tweaks = "*"
+djangorestframework = "*"
+django-cors-headers = "*"
 
 [requires]
 python_version = "3.7"
