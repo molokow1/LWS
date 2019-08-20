@@ -3,7 +3,7 @@ const casual = require("casual");
 const { sim_result, sim_form } = require("./data.js");
 const server = jsonServer.create();
 const middlewares = jsonServer.defaults();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 4000;
 
 server.use(jsonServer.bodyParser);
 server.use(middlewares);
