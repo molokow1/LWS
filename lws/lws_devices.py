@@ -313,6 +313,11 @@ class EndDevice(LWSDevice):
                 self._current_state = EndDeviceStates.RX1_RECV
 
             elif self._current_state == EndDeviceStates.RX1_RECV:
+                # LoRaWAN spec says that this recv window should be long enough to detect a preamble
+                # therefore should have something like this
+                # yield rx_window_timeout | rx_recv
+                # if rx_window_timeout == true:
+                # go to rx2
                 pass
 
             elif self._current_state == EndDeviceStates.RX2_DELAY:

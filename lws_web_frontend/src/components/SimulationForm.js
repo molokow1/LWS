@@ -12,8 +12,6 @@ function AllSelectElements(props) {
     var ret = []
     const settings = props.settings
     for (let s in settings) {
-        console.log(s)
-        console.log(settings[s].selections)
         ret.push(
             <SelectElement label={s} selections={settings[s].selections} />
         )
@@ -37,11 +35,23 @@ function SelectElement(props) {
     )
 }
 
+// function handleChange(event) {
+//     setValues(oldValues => ({
+//         ...oldValues,
+//         [event.target.name]: event.target.value,
+//     }));
+// }
+
 function MenuItems(props) {
     var ret = []
     for (var s in props.selections) {
         ret.push(
-            <MenuItem value={s}>{props.selections[s]}</MenuItem>
+            <MenuItem
+                key={props.key}
+                value={s}>
+                {/* // onChange={handleChange}> */}
+                {props.selections[s]}
+            </ MenuItem>
         )
     }
     return ret
@@ -53,6 +63,7 @@ export default class SimulationForm extends Component {
         this.state = { formdata: null }
 
     }
+
 
     componentDidMount() {
         // // const data = this.obtainFormData();
