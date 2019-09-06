@@ -22,15 +22,17 @@ function AllSelectElements(props) {
 function SelectElement(props) {
     return (
         <React.Fragment>
-            <InputLabel htmlFor={props.label}>
-                {props.label}
-            </InputLabel>
-            <Select value="test" inputProps={{
-                name: props.label,
-                id: props.label,
-            }}>
-                <MenuItems selections={props.selections} />
-            </Select>
+            <FormControl>
+                <InputLabel htmlFor={props.label}>
+                    {props.label}
+                </InputLabel>
+                <Select value="test" inputProps={{
+                    name: props.label,
+                    id: props.label,
+                }}>
+                    <MenuItems selections={props.selections} />
+                </Select>
+            </FormControl>
         </React.Fragment>
     )
 }
@@ -87,13 +89,11 @@ export default class SimulationForm extends Component {
             const form = this.state.formdata
             console.log(form)
             return (
-                <div>
+                <div className="App">
                     <h1>Simulation Parameters</h1>
                     <form action="">
                         <h1>{form.regional_settings.header}</h1>
-                        <FormControl>
-                            <AllSelectElements settings={form.regional_settings.settings} />
-                        </FormControl>
+                        <AllSelectElements settings={form.regional_settings.settings} />
                     </form>
                 </div>
             );
