@@ -39,7 +39,21 @@ class PacketType(Enum):
 
 
 class Packet(object):
+    """Packet encapsulates LoRa parameters that represents a LoRa PHY packet
+    TODO: add bit fields so that the packet can be converted to a binary form
+
+    """
+
     def __init__(self, device_id, device_type, packet_type, timestamp, lora_params):
+        """init
+
+        Arguments:
+            device_id {int} -- a LWSDevice with device_id that made this packet
+            device_type {DeviceType} -- the type of device that made this packet
+            packet_type {PacketType} -- the type of this packet
+            timestamp {int} -- unix timestamp when this packet is made
+            lora_params {dict} -- a python dict containing all the LoRa params
+        """
         self.device_id = device_id
         self.device_type = device_type
         self.packet_type = packet_type
@@ -83,7 +97,28 @@ class BasestationStates(Enum):
 
 class LWSDevice(ABC):
 
+    """Base class to be inhereted from the device implementations such as EndDevice class and BaseStation class.
+
+
+    Arguments:
+        ABC {Abstract Base Class} --
+
+    Raises:
+        NotImplementedError: You need to implement some methods when you are implementing a LWSDevice class
+
+    """
+
     def __init__(self, device_id, x, y, dist, global_config, env):
+        """init
+
+        Arguments:
+            device_id {int} -- the id of this device
+            x {float} -- the x coordinate of the position of this device
+            y {float} -- the y coordinate of the position of this device
+            dist {float} -- the distance between this device and the basestation(TODO: remove this from the LWSDevice class)
+            global_config {Config} -- global config class
+            env {simpy.Environment} -- global simpy environment
+        """
         super().__init__()
 
         self.env = env
@@ -266,6 +301,11 @@ class EndDevice(LWSDevice):
             self._trigger_event("ed_polling_event")
 
     def start_fsm(self, from_device_id):
+        """the main finite state machine process which models the top level LoRaWAN class A state transitions e.g. transmit -> rx1_delay -> rx1_window -> rx2_delay -> rx2_window -> transmit 
+
+        Arguments:
+            from_device_id {int} -- the device id of the device this object has established a full-duplex connection with e.g. an end device and a basestation
+        """
         send_conn = self.send_conns[from_device_id]
         while True:
 
@@ -424,6 +464,12 @@ class BaseStation(LWSDevice):
 
 
 def create_full_duplex_connection(end_device, basestation):
+    """the helper function that creates full duplex connection between an end device and basestation by adding each other to their dictionary of sending and receiving channels and evenet mapping
+
+    Arguments:
+        end_device {EndDevice} -- 
+        basestation {BaseStation} -- 
+    """
     end_device_send_conn = end_device.create_sending_connection(
         basestation.device_id)
     base_station_send_conn = basestation.create_sending_connection(
